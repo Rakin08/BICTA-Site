@@ -1,0 +1,14 @@
+{
+  "_comment": "DEMO — delete this file after reading. It shows the exact format Claude will give you.",
+  "description": "Demo: Update hero headline and add an advisor",
+  "commit_message": "content: demo AI change",
+  "post_commands": [],
+  "changes": [
+    {
+      "operation": "replace",
+      "file": "frontend/src/sections/HomeHero.tsx",
+      "find": "Bridging Academia & Industry",
+      "replace": "Bridging Academia & Industry"
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+name: Deploy Backend → Railway
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/deploy-backend.yml"
+
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Build & Deploy to Railway
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+          cache-dependency-path: backend/package.json
+
+      - name: Install dependencies
+        working-directory: backend
+        run: npm install --legacy-peer-deps
+
+      - name: Build API
+        working-directory: backend
+        run: bash build-api.sh
+
+      - name: Deploy to Railway
+        uses: bervProject/railway-deploy@v1.1.0
+        with:
+          railway_token: ${{ secrets.RAILWAY_TOKEN }}
+          service: ${{ secrets.RAILWAY_SERVICE_ID }}

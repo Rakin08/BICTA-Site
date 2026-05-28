@@ -1,0 +1,28 @@
+{
+  "name": "bicta-elite",
+  "version": "1.0.0",
+  "private": true,
+  "description": "BICTA Elite — Monorepo with AI-powered auto-deploy pipeline",
+  "type": "module",
+  "scripts": {
+    "setup":         "node scripts/setup.js",
+    "deploy":        "node scripts/apply-ai-change.js",
+    "deploy:file":   "node scripts/apply-ai-change.js",
+    "dev:frontend":  "cd frontend && npm run dev",
+    "dev:backend":   "cd backend && npm run dev",
+    "dev:all":       "docker-compose up",
+    "build:frontend":"cd frontend && npm run build",
+    "build:backend": "cd backend && bash build-api.sh",
+    "db:push":       "cd backend && npx drizzle-kit push",
+    "db:studio":     "cd backend && npx drizzle-kit studio",
+    "logs":          "docker-compose logs -f"
+  },
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "engines": {
+    "node": ">=18.0.0",
+    "npm":  ">=9.0.0"
+  }
+}

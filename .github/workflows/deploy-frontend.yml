@@ -1,0 +1,48 @@
+name: Deploy Frontend → Vercel
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "frontend/**"
+      - ".github/workflows/deploy-frontend.yml"
+
+  # Allow manual trigger from GitHub UI
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Build & Deploy to Vercel
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+          cache: "npm"
+          cache-dependency-path: frontend/package.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm install --legacy-peer-deps
+
+      - name: Build Next.js
+        working-directory: frontend
+        env:
+          NEXT_PUBLIC_SANITY_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_SANITY_PROJECT_ID }}
+          NEXT_PUBLIC_SANITY_DATASET: production
+          NEXT_PUBLIC_BICTA_API_URL: ${{ secrets.BICTA_API_URL }}
+        run: npm run build
+
+      - name: Deploy to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          working-directory: frontend
+          vercel-args: "--prod"
