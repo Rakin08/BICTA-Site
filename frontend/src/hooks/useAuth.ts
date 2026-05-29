@@ -8,7 +8,14 @@ interface AuthUser {
   name: string | null;
   email: string | null;
   avatar: string | null;
-  role: "admin" | "student" | "partner";
+  role: "admin" | "participant" | "judge" | "partner";
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  university?: string;
+  organization?: string;
+  dateOfBirth?: string;
+  verified?: boolean;
 }
 
 interface UseAuthOptions {
@@ -84,6 +91,8 @@ export function useAuth(options?: UseAuthOptions) {
     isAdmin: user?.role === "admin",
     isStudent: user?.role === "student",
     isPartner: user?.role === "partner",
+    isParticipant: user?.role === "participant",
+    isJudge: user?.role === "judge",
     isLoading,
     logout,
     refresh: checkAuth,
