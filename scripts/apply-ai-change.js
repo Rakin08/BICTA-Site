@@ -17,7 +17,7 @@ import path from "path";
 import { execSync } from "child_process";
 import { createInterface } from "readline";
 
-const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), "..");
+const ROOT = process.cwd();
 
 // ── Terminal colours ──────────────────────────────────────────────────
 const C = {

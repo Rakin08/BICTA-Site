@@ -7,6 +7,7 @@ import ProgramsOverview from "@/sections/ProgramsOverview";
 import EventCard from "@/components/EventCard";
 import ImpactMetricsSection from "@/components/ImpactMetricsSection";
 import LogoWall from "@/components/LogoWall";
+import CoreMembersSection from "@/components/CoreMembersSection";
 import CTASection from "@/components/CTASection";
 import SectionLabel from "@/components/ui/SectionLabel";
 import type { SanitySiteSettings, SanityPartner } from "@/types";
@@ -124,6 +125,14 @@ export default async function HomePage() {
           </div>
         </section>
       )}
+
+      {/* Section 5b: Core Members */}
+      <CoreMembersSection
+        founders={[]}
+        advisors={[]}
+        title="The Minds Behind BICTA"
+        subtitle="World-class founders and advisors guiding Bangladesh's ICT and AI ecosystem."
+      />
 
       {/* Section 6: CTA */}
       <CTASection

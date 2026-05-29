@@ -107,6 +107,19 @@ export const PARTNERS_QUERY = `
 /**
  * Default SEO from site settings.
  */
+export const CORE_MEMBERS_QUERY = `
+  {
+    "founders": *[_type == "founder" && published == true] | order(displayOrder asc) {
+      _id, name, designation, bio, image { asset { _ref } },
+      linkedInUrl, twitterUrl, displayOrder
+    },
+    "advisors": *[_type == "advisor" && published == true && featured == true] | order(displayOrder asc)[0..7] {
+      _id, name, title, company, category, bio, expertise,
+      image { asset { _ref } }, linkedInUrl, twitterUrl, websiteUrl
+    }
+  }
+`;
+
 export const DEFAULT_SEO_QUERY = `
   *[_type == "siteSettings"][0] {
     siteTitle,

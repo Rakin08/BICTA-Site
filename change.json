@@ -1,0 +1,19 @@
+{
+  "description": "Fix: wire CoreMembersSection into homepage page.tsx",
+  "commit_message": "feat: add CoreMembersSection to homepage",
+  "post_commands": [],
+  "changes": [
+    {
+      "operation": "replace",
+      "file": "frontend/app/page.tsx",
+      "find": "      {/* Section 6: CTA */}",
+      "replace": "      {/* Section 5b: Core Members */}\n      <CoreMembersSection\n        founders={[]}\n        advisors={[]}\n        title=\"The Minds Behind BICTA\"\n        subtitle=\"World-class founders and advisors guiding Bangladesh's ICT and AI ecosystem.\"\n      />\n\n      {/* Section 6: CTA */}"
+    },
+    {
+      "operation": "replace",
+      "file": "frontend/src/lib/sanity/queries.ts",
+      "find": "export const DEFAULT_SEO_QUERY",
+      "replace": "export const CORE_MEMBERS_QUERY = `\n  {\n    \"founders\": *[_type == \"founder\" && published == true] | order(displayOrder asc) {\n      _id, name, designation, bio, image { asset { _ref } },\n      linkedInUrl, twitterUrl, displayOrder\n    },\n    \"advisors\": *[_type == \"advisor\" && published == true && featured == true] | order(displayOrder asc)[0..7] {\n      _id, name, title, company, category, bio, expertise,\n      image { asset { _ref } }, linkedInUrl, twitterUrl, websiteUrl\n    }\n  }\n`;\n\nexport const DEFAULT_SEO_QUERY"
+    }
+  ]
+}
