@@ -9,5 +9,6 @@ npx esbuild api/boot.ts \
   --outdir=dist \
   --banner:js="import { createRequire } from 'module'; const require = createRequire(import.meta.url);" \
   --external:@aws-sdk/client-s3 \
-  --external:@aws-sdk/s3-request-presigner
+  --external:@aws-sdk/s3-request-presigner \
+  --external:nodemailer
 echo "✅ Build complete → dist/boot.js"

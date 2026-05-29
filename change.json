@@ -1,13 +1,25 @@
 {
-  "description": "Add Users link to admin navigation",
-  "commit_message": "feat: add users page to admin nav",
+  "description": "Fix: add nodemailer to backend dependencies and mark as external in build",
+  "commit_message": "fix: add nodemailer dependency for email OTP",
   "post_commands": [],
   "changes": [
     {
+      "operation": "json_set",
+      "file": "backend/package.json",
+      "key": "dependencies.nodemailer",
+      "value": "^6.9.8"
+    },
+    {
+      "operation": "json_set",
+      "file": "backend/package.json",
+      "key": "dependencies.@types/nodemailer",
+      "value": "^6.4.14"
+    },
+    {
       "operation": "replace",
-      "file": "frontend/src/components/admin/AdminNav.tsx",
-      "find": "  { href: \"/admin/judge\", label: \"Judge Panel\", icon: Gavel },",
-      "replace": "  { href: \"/admin/users\", label: \"Users\", icon: Users },\n  { href: \"/admin/judge\", label: \"Judge Panel\", icon: Gavel },"
+      "file": "backend/build-api.sh",
+      "find": "--external:@aws-sdk/s3-request-presigner",
+      "replace": "--external:@aws-sdk/s3-request-presigner \\\n  --external:nodemailer"
     }
   ]
 }
