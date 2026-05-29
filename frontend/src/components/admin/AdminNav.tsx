@@ -20,6 +20,7 @@ const navItems = [
   { href: "/admin/events", label: "Event Banners", icon: Image },
   { href: "/admin/advisers", label: "Advisers", icon: Users },
   { href: "/admin/competitions", label: "Competitions", icon: Trophy },
+  { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/judge", label: "Judge Panel", icon: Gavel },
 ];
 

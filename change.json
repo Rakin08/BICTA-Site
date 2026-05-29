@@ -1,12 +1,13 @@
 {
-  "description": "Overwrite boot.ts with auth routes wired in",
-  "commit_message": "feat: add auth routes to API boot",
+  "description": "Add Users link to admin navigation",
+  "commit_message": "feat: add users page to admin nav",
   "post_commands": [],
   "changes": [
     {
-      "operation": "overwrite",
-      "file": "backend/api/boot.ts",
-      "content": "import { Hono } from \"hono\";\nimport { cors } from \"hono/cors\";\nimport { bodyLimit } from \"hono/body-limit\";\nimport type { HttpBindings } from \"@hono/node-server\";\nimport { fetchRequestHandler } from \"@trpc/server/adapters/fetch\";\nimport { appRouter } from \"./router\";\nimport { createContext } from \"./context\";\nimport { env } from \"./lib/env\";\nimport { createOAuthCallbackHandler } from \"./kimi/auth\";\nimport { authRouter } from \"./auth-custom\";\nimport { Paths } from \"@contracts/constants\";\n\nconst app = new Hono<{ Bindings: HttpBindings }>();\n\napp.use(\"*\", cors({\n  origin: [\"https://bictasite.vercel.app\", \"https://bicta.org\", \"http://localhost:3000\"],\n  allowMethods: [\"GET\", \"POST\", \"PUT\", \"DELETE\", \"OPTIONS\"],\n  allowHeaders: [\"Content-Type\", \"Authorization\"],\n  credentials: true,\n}));\n\napp.use(bodyLimit({ maxSize: 50 * 1024 * 1024 }));\napp.get(Paths.oauthCallback, createOAuthCallbackHandler());\napp.route(\"/api/auth\", authRouter);\napp.use(\"/api/trpc/*\", async (c) => {\n  return fetchRequestHandler({\n    endpoint: \"/api/trpc\",\n    req: c.req.raw,\n    router: appRouter,\n    createContext,\n  });\n});\n\napp.get(\"/\", (c) => c.json({ ok: true, service: \"BICTA API\", version: \"2.0.0\" }));\napp.all(\"/api/*\", (c) => c.json({ error: \"Not Found\" }, 404));\n\nexport default app;\n\nif (env.isProduction) {\n  const { serve } = await import(\"@hono/node-server\");\n  const port = parseInt(process.env.PORT || \"3001\");\n  serve({ fetch: app.fetch, port }, () => {\n    console.log(`BICTA API running on http://localhost:${port}/`);\n  });\n}\n"
+      "operation": "replace",
+      "file": "frontend/src/components/admin/AdminNav.tsx",
+      "find": "  { href: \"/admin/judge\", label: \"Judge Panel\", icon: Gavel },",
+      "replace": "  { href: \"/admin/users\", label: \"Users\", icon: Users },\n  { href: \"/admin/judge\", label: \"Judge Panel\", icon: Gavel },"
     }
   ]
 }
