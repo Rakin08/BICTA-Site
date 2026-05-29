@@ -17,6 +17,7 @@ RUN node_modules/.bin/esbuild api/boot.ts \
   --outdir=dist \
   --banner:js="import { createRequire } from 'module'; const require = createRequire(import.meta.url);" \
   --external:mysql2 \
+  --external:nodemailer \
   --external:@aws-sdk/client-s3 \
   --external:@aws-sdk/s3-request-presigner
 
