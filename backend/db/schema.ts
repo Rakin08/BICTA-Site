@@ -17,15 +17,37 @@ export const users = mysqlTable("users", {
   name: varchar("name", { length: 255 }),
   email: varchar("email", { length: 320 }),
   avatar: text("avatar"),
-  role: mysqlEnum("role", ["admin", "student", "partner"]).default("student").notNull(),
+  role: mysqlEnum("role", ["admin", "student", "partner", "participant", "judge"]).default("student").notNull(),
   phone: varchar("phone", { length: 50 }),
   organization: varchar("organization", { length: 255 }),
   title: varchar("title", { length: 255 }),
   bio: text("bio"),
+  passwordHash: text("passwordHash"),
+  passwordSalt: text("passwordSalt"),
+  firstName: varchar("firstName", { length: 100 }),
+  lastName: varchar("lastName", { length: 100 }),
+  dateOfBirth: varchar("dateOfBirth", { length: 20 }),
+  studentId: varchar("studentId", { length: 100 }),
+  department: varchar("department", { length: 255 }),
+  graduationYear: varchar("graduationYear", { length: 10 }),
+  university: varchar("university", { length: 255 }),
+  linkedIn: text("linkedIn"),
+  emailVerified: boolean("emailVerified").default(false),
+  pendingRole: varchar("pendingRole", { length: 50 }),
   isActive: boolean("isActive").default(true),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().notNull().$onUpdate(() => new Date()),
   lastSignInAt: timestamp("lastSignInAt").defaultNow().notNull(),
+});
+
+// OTP codes table for 2FA
+export const otpCodes = mysqlTable("otp_codes", {
+  id: serial("id").primaryKey(),
+  email: varchar("email", { length: 320 }).notNull(),
+  otp: varchar("otp", { length: 10 }).notNull(),
+  purpose: varchar("purpose", { length: 50 }).default("verify_judge"),
+  expiresAt: timestamp("expiresAt").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
 export type User = typeof users.$inferSelect;
