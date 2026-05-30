@@ -10,6 +10,9 @@ import LogoWall from "@/components/LogoWall";
 import CoreMembersSection from "@/components/CoreMembersSection";
 import CTASection from "@/components/CTASection";
 import SectionLabel from "@/components/ui/SectionLabel";
+import NewsTicker from "@/components/NewsTicker";
+import EventsScrollSection from "@/components/EventsScrollSection";
+import CoreMembersSection from "@/components/CoreMembersSection";
 import type { SanitySiteSettings, SanityPartner } from "@/types";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -67,7 +70,10 @@ export default async function HomePage() {
         secondaryCta={siteSettings?.heroSecondaryCta}
       />
 
-      {/* Section 2: Flagship Events */}
+      {/* News Ticker */}
+      <NewsTicker />
+
+      {/* Section 2: Flagship Events */
       <section
         id="events"
         className="relative bg-bicta-void"
@@ -105,11 +111,28 @@ export default async function HomePage() {
         </div>
       </section>
 
+      {/* Gen Z Events Scroll */}
+      <section className="bg-bicta-void py-20">
+        <div className="mb-10 px-4 sm:px-6 lg:px-8" style={{maxWidth:1280,margin:"0 auto 0",paddingBottom:0}}>
+          <SectionLabel className="mb-3">UPCOMING EVENTS</SectionLabel>
+          <h2 className="font-display text-bicta-cream" style={{fontSize:"clamp(2rem,4vw,3rem)",lineHeight:1.1}}>What&apos;s <em style={{fontStyle:"italic",color:"#c9a84c"}}>Happening</em></h2>
+        </div>
+        <EventsScrollSection />
+      </section>
+
       {/* Section 3: Programs Overview */}
       <ProgramsOverview programs={programList} />
 
       {/* Section 4: Impact Metrics */}
       <ImpactMetricsSection metrics={impactMetrics} />
+
+      {/* Core Members & Advisors */}
+      <CoreMembersSection
+        founders={[]}
+        advisors={[]}
+        title="The Minds Behind BICTA"
+        subtitle="World-class founders and advisors guiding Bangladesh&apos;s ICT and AI ecosystem."
+      />
 
       {/* Section 5: Partner Logo Wall */}
       {partnerSupporters.length > 0 && (
