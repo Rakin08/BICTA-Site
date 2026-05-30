@@ -19,10 +19,10 @@ const footerLinks = [
 ];
 
 const socialLinks = [
-  { label: "LinkedIn", href: "#", icon: Linkedin },
-  { label: "X", href: "#", icon: Twitter },
-  { label: "Facebook", href: "#", icon: Facebook },
-  { label: "YouTube", href: "#", icon: Youtube },
+  { label: "LinkedIn", href: "https://linkedin.com/company/bicta-bd", icon: Linkedin },
+  { label: "X", href: "https://x.com/bicta_bd", icon: Twitter },
+  { label: "Facebook", href: "https://facebook.com/bictabd", icon: Facebook },
+  { label: "YouTube", href: "https://youtube.com/@bicta_bd", icon: Youtube },
 ];
 
 export default function SiteFooter({ supporters }: SiteFooterProps) {
