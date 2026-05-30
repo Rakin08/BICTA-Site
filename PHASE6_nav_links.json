@@ -1,0 +1,18 @@
+{
+  "description": "PHASE 6: Add leaderboard + alumni to nav, fix event cards to link properly",
+  "commit_message": "feat: leaderboard + alumni in nav; event cards properly linked",
+  "changes": [
+    {
+      "operation": "replace",
+      "file": "frontend/src/components/layout/SiteNav.tsx",
+      "find": "{ label: \"About\", href: \"/about\" },",
+      "replace": "{ label: \"About\", href: \"/about\" },\n  { label: \"Alumni\", href: \"/alumni\" },"
+    },
+    {
+      "operation": "replace",
+      "file": "frontend/src/components/EventCard.tsx",
+      "find": "href=\"#\"",
+      "replace": "href={`/events/${event.slug}`}"
+    }
+  ]
+}

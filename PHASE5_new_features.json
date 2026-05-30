@@ -1,0 +1,45 @@
+{
+  "description": "PHASE 5: New features — leaderboard page, alumni page, Telegram notifications on form submits",
+  "commit_message": "feat: leaderboard page, alumni page, Telegram notify on contact/partner submits",
+  "changes": [
+    {
+      "operation": "create",
+      "file": "frontend/app/competition/leaderboard/page.tsx",
+      "content": "\"use client\";\nimport { useEffect, useState } from \"react\";\nimport PageHero from \"@/components/layout/PageHero\";\n\ninterface Entry { rank: number; name: string; university: string; score: number; competition: string; }\n\nexport default function LeaderboardPage() {\n  const [entries, setEntries] = useState<Entry[]>([]);\n  const [loading, setLoading] = useState(true);\n\n  useEffect(() => {\n    const apiUrl = process.env.NEXT_PUBLIC_BICTA_API_URL || \"https://bicta-site-production.up.railway.app\";\n    fetch(`${apiUrl}/trpc/competition.leaderboard`)\n      .then(r => r.ok ? r.json() : null)\n      .then(d => d?.result?.data && setEntries(d.result.data))\n      .catch(() => {})\n      .finally(() => setLoading(false));\n  }, []);\n\n  const medals = [\"🥇\",\"🥈\",\"🥉\"];\n\n  return (\n    <>\n      <PageHero label=\"Competition\" title=\"National Leaderboard\" subtitle=\"Top performers across all BICTA competitions.\" />\n      <section className=\"py-16 px-6 max-w-4xl mx-auto\">\n        {loading ? (\n          <div className=\"text-bicta-subtle text-sm text-center py-20\">Loading rankings…</div>\n        ) : entries.length === 0 ? (\n          <div className=\"text-center py-20\">\n            <p className=\"text-bicta-subtle\">No results published yet.</p>\n            <p className=\"text-bicta-subtle text-sm mt-2\">Check back after the next competition ends.</p>\n          </div>\n        ) : (\n          <div className=\"space-y-2\">\n            {entries.map((e, i) => (\n              <div key={i} className={`flex items-center gap-4 px-5 py-4 rounded-xl border ${\n                i === 0 ? \"border-bicta-gold bg-bicta-gold/5\" : \"border-bicta-border bg-bicta-surface\"\n              }`}>\n                <span className=\"text-2xl w-8 text-center\">{medals[i] ?? `#${e.rank}`}</span>\n                <div className=\"flex-1\">\n                  <p className=\"text-bicta-cream font-medium\">{e.name}</p>\n                  <p className=\"text-bicta-subtle text-xs\">{e.university} · {e.competition}</p>\n                </div>\n                <span className=\"font-mono text-bicta-gold font-semibold\">{e.score} pts</span>\n              </div>\n            ))}\n          </div>\n        )}\n      </section>\n    </>\n  );\n}\n"
+    },
+    {
+      "operation": "create",
+      "file": "frontend/app/alumni/page.tsx",
+      "content": "\"use client\";\nimport { useEffect, useState } from \"react\";\nimport PageHero from \"@/components/layout/PageHero\";\n\ninterface Alumni { id: number; name: string; university: string; cohort: string; currentRole: string; featured: boolean; }\n\nexport default function AlumniPage() {\n  const [alumni, setAlumni]   = useState<Alumni[]>([]);\n  const [loading, setLoading] = useState(true);\n\n  useEffect(() => {\n    const apiUrl = process.env.NEXT_PUBLIC_BICTA_API_URL || \"https://bicta-site-production.up.railway.app\";\n    fetch(`${apiUrl}/trpc/alumni.list`)\n      .then(r => r.ok ? r.json() : null)\n      .then(d => d?.result?.data && setAlumni(d.result.data))\n      .catch(() => {})\n      .finally(() => setLoading(false));\n  }, []);\n\n  return (\n    <>\n      <PageHero label=\"Community\" title=\"BICTA Alumni\" subtitle=\"Where are our graduates now? A growing network of Bangladesh's top tech talent.\" />\n      <section className=\"py-16 px-6 max-w-6xl mx-auto\">\n        {loading ? (\n          <div className=\"text-bicta-subtle text-sm text-center py-20\">Loading…</div>\n        ) : alumni.length === 0 ? (\n          <div className=\"text-center py-20\">\n            <p className=\"text-bicta-subtle\">Alumni profiles coming soon.</p>\n          </div>\n        ) : (\n          <div className=\"grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5\">\n            {alumni.map(a => (\n              <div key={a.id} className=\"bg-bicta-surface border border-bicta-border rounded-xl p-5\">\n                <div className=\"w-10 h-10 rounded-full bg-bicta-gold/20 flex items-center justify-center text-bicta-gold font-semibold text-sm mb-3\">\n                  {a.name.split(\" \").map(n => n[0]).join(\"\").slice(0,2)}\n                </div>\n                <p className=\"text-bicta-cream font-medium\">{a.name}</p>\n                <p className=\"text-bicta-subtle text-xs mt-0.5\">{a.currentRole}</p>\n                <div className=\"flex gap-2 mt-3\">\n                  <span className=\"text-xs bg-bicta-raised text-bicta-subtle px-2 py-0.5 rounded-full\">{a.university}</span>\n                  <span className=\"text-xs bg-bicta-raised text-bicta-subtle px-2 py-0.5 rounded-full\">Cohort {a.cohort}</span>\n                </div>\n              </div>\n            ))}\n          </div>\n        )}\n      </section>\n    </>\n  );\n}\n"
+    },
+    {
+      "operation": "create",
+      "file": "frontend/src/lib/telegram.ts",
+      "content": "/**\n * Telegram notification helper — sends messages to the admin chat.\n * Uses the existing bot token + chat ID from env vars.\n */\nexport async function sendTelegram(message: string): Promise<void> {\n  const token  = process.env.TELEGRAM_BOT_TOKEN;\n  const chatId = process.env.TELEGRAM_CHAT_ID;\n  if (!token || !chatId) return; // silently skip if not configured\n\n  try {\n    await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {\n      method: \"POST\",\n      headers: { \"Content-Type\": \"application/json\" },\n      body: JSON.stringify({\n        chat_id: chatId,\n        text: message,\n        parse_mode: \"HTML\",\n      }),\n    });\n  } catch {\n    // Never let a notification failure break the main flow\n  }\n}\n"
+    },
+    {
+      "operation": "replace",
+      "file": "frontend/app/api/contact/route.ts",
+      "find": "import nodemailer from \"nodemailer\";",
+      "replace": "import nodemailer from \"nodemailer\";\nimport { sendTelegram } from \"@/lib/telegram\";"
+    },
+    {
+      "operation": "replace",
+      "file": "frontend/app/api/contact/route.ts",
+      "find": "    return NextResponse.json({ ok: true });",
+      "replace": "    await sendTelegram(`📬 <b>New contact form</b>\\n<b>From:</b> ${name} (${email})\\n<b>Subject:</b> ${subject || \"N/A\"}\\n<b>Message:</b> ${message.slice(0, 200)}${message.length > 200 ? \"…\" : \"\"}`);\n    return NextResponse.json({ ok: true });"
+    },
+    {
+      "operation": "replace",
+      "file": "frontend/app/api/partner-inquiry/route.ts",
+      "find": "import nodemailer from \"nodemailer\";",
+      "replace": "import nodemailer from \"nodemailer\";\nimport { sendTelegram } from \"@/lib/telegram\";"
+    },
+    {
+      "operation": "replace",
+      "file": "frontend/app/api/partner-inquiry/route.ts",
+      "find": "    return NextResponse.json({ ok: true });",
+      "replace": "    await sendTelegram(`🤝 <b>New partner inquiry</b>\\n<b>Company:</b> ${company}\\n<b>Contact:</b> ${name} (${email})\\n<b>Type:</b> ${partnershipType || \"N/A\"}`);\n    return NextResponse.json({ ok: true });"
+    }
+  ]
+}

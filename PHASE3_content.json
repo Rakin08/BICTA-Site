@@ -1,0 +1,40 @@
+{
+  "description": "PHASE 3b: Real events + programs SQL seed, footer social links, CoreMembersSection",
+  "commit_message": "content: seed real events/programs, fix footer social links, push CoreMembersSection",
+  "changes": [
+    {
+      "operation": "replace",
+      "file": "frontend/src/components/layout/SiteFooter.tsx",
+      "find": "{ label: \"LinkedIn\", href: \"#\"",
+      "replace": "{ label: \"LinkedIn\", href: \"https://linkedin.com/company/bicta-bd\""
+    },
+    {
+      "operation": "replace",
+      "file": "frontend/src/components/layout/SiteFooter.tsx",
+      "find": "{ label: \"X\", href: \"#\"",
+      "replace": "{ label: \"X\", href: \"https://x.com/bicta_bd\""
+    },
+    {
+      "operation": "replace",
+      "file": "frontend/src/components/layout/SiteFooter.tsx",
+      "find": "{ label: \"Facebook\", href: \"#\"",
+      "replace": "{ label: \"Facebook\", href: \"https://facebook.com/bictabd\""
+    },
+    {
+      "operation": "replace",
+      "file": "frontend/src/components/layout/SiteFooter.tsx",
+      "find": "{ label: \"YouTube\", href: \"#\"",
+      "replace": "{ label: \"YouTube\", href: \"https://youtube.com/@bicta_bd\""
+    },
+    {
+      "operation": "create",
+      "file": "frontend/src/components/CoreMembersSection.tsx",
+      "content": "\"use client\";\nimport { useState } from \"react\";\nimport { ADVISORS, FOUNDERS } from \"@/lib/static-data\";\nimport PeopleCard from \"./PeopleCard\";\n\ntype Tab = \"founders\" | \"advisors\";\ntype Category = \"All\" | \"Industry\" | \"Technology\" | \"Academia\" | \"Policy\" | \"Startup\";\n\nexport default function CoreMembersSection() {\n  const [tab, setTab]         = useState<Tab>(\"founders\");\n  const [category, setCategory] = useState<Category>(\"All\");\n\n  const publishedAdvisors = ADVISORS.filter(a => a.published);\n  const categories: Category[] = [\"All\", \"Industry\", \"Technology\", \"Academia\", \"Policy\", \"Startup\"];\n  const filtered = category === \"All\" ? publishedAdvisors : publishedAdvisors.filter(a => a.category === category);\n\n  return (\n    <section className=\"py-20 px-6\">\n      <div className=\"max-w-6xl mx-auto\">\n        <div className=\"text-center mb-12\">\n          <span className=\"text-bicta-gold text-xs font-mono tracking-widest uppercase\">Our People</span>\n          <h2 className=\"font-display text-4xl text-bicta-cream mt-2\">The Minds Behind BICTA</h2>\n          <p className=\"text-bicta-subtle mt-3 max-w-xl mx-auto\">Founders, advisors, and industry leaders shaping Bangladesh&apos;s AI future.</p>\n        </div>\n\n        {/* Tab selector */}\n        <div className=\"flex gap-2 justify-center mb-10\">\n          {([\"founders\", \"advisors\"] as Tab[]).map(t => (\n            <button key={t} onClick={() => setTab(t)}\n              className={`px-6 py-2 rounded-full text-sm font-medium border transition-all ${\n                tab === t\n                  ? \"bg-bicta-gold text-bicta-void border-bicta-gold\"\n                  : \"border-bicta-border text-bicta-subtle hover:border-bicta-gold/40\"\n              }`}>\n              {t === \"founders\" ? \"Founders\" : \"Advisors\"}\n            </button>\n          ))}\n        </div>\n\n        {tab === \"advisors\" && (\n          <div className=\"flex flex-wrap gap-2 justify-center mb-8\">\n            {categories.map(c => (\n              <button key={c} onClick={() => setCategory(c)}\n                className={`px-4 py-1.5 rounded-full text-xs border transition-all ${\n                  category === c\n                    ? \"bg-bicta-gold/20 text-bicta-gold border-bicta-gold/40\"\n                    : \"border-bicta-border text-bicta-subtle hover:border-bicta-gold/30\"\n                }`}>\n                {c}\n              </button>\n            ))}\n          </div>\n        )}\n\n        <div className=\"grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6\">\n          {tab === \"founders\"\n            ? FOUNDERS.map(f => (\n                <PeopleCard key={f.id} name={f.name} role={f.designation} bio={f.bio}\n                  imageUrl={f.imageUrl} linkedInUrl={f.linkedInUrl} />\n              ))\n            : filtered.map(a => (\n                <PeopleCard key={a.id} name={a.name} role={`${a.title} — ${a.company}`}\n                  bio={a.expertise} imageUrl={a.imageUrl} linkedInUrl={a.linkedIn} />\n              ))\n          }\n          {tab === \"advisors\" && filtered.length === 0 && (\n            <p className=\"col-span-3 text-center text-bicta-subtle py-12\">No advisors in this category yet.</p>\n          )}\n        </div>\n      </div>\n    </section>\n  );\n}\n"
+    },
+    {
+      "operation": "create",
+      "file": "scripts/seed-events.sql",
+      "content": "-- Run this in Railway MySQL query tab to add real events\n-- Railway > Your Project > MySQL > Query\n\nINSERT IGNORE INTO events (title, slug, summary, eventType, mode, status, startDate, endDate, venue, featured, published, createdAt, updatedAt) VALUES\n('AI Olympiad 2026 — National Finals', 'ai-olympiad-2026', 'Bangladesh\\'s most prestigious AI competition. Three rounds, one national champion crowned at BUET.', 'competition', 'hybrid', 'registration_open', '2026-08-15', '2026-08-17', 'BUET, Dhaka', 1, 1, NOW(), NOW()),\n('National Datathon Series 2026', 'national-datathon-series', 'Data science challenge for university students across Bangladesh. Build models, win prizes.', 'competition', 'online', 'upcoming', '2026-07-02', '2026-07-04', 'Online', 1, 1, NOW(), NOW()),\n('AI for SDG Bangladesh 2026', 'ai-for-sdg-2026', 'Build AI solutions for sustainable development goals — climate, health, education, and poverty.', 'hackathon', 'hybrid', 'upcoming', '2026-09-10', '2026-09-12', 'Chittagong, Bangladesh', 0, 1, NOW(), NOW());\n\nINSERT IGNORE INTO programs (title, slug, summary, featured, published, createdAt, updatedAt) VALUES\n('AI Olympiad Program', 'ai-olympiad', 'Annual national AI competition for university students across Bangladesh. Multiple rounds from online quals to live finals.', 1, 1, NOW(), NOW()),\n('AI for SDG Initiative', 'ai-for-sdg', 'Apply AI to solve Bangladesh\\'s sustainable development challenges across climate, health, and education sectors.', 1, 1, NOW(), NOW()),\n('National Datathon Series', 'datathon-series', 'Data science competitions building analytical skills nationwide. Open to all Bangladeshi university students.', 1, 1, NOW(), NOW());\n"
+    }
+  ]
+}

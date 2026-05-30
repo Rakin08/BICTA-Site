@@ -1,100 +1,30 @@
 "use client";
+import { useState, useEffect, useCallback } from "react";
 
-import { useCallback, useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
-
-interface AuthUser {
+export interface AuthUser {
   id: number;
-  name: string | null;
-  email: string | null;
-  avatar: string | null;
+  email: string;
+  name: string;
   role: "admin" | "participant" | "judge" | "partner";
-  firstName?: string;
-  lastName?: string;
-  phone?: string;
-  university?: string;
-  organization?: string;
-  dateOfBirth?: string;
-  verified?: boolean;
 }
 
-interface UseAuthOptions {
-  redirectOnUnauthenticated?: boolean;
-  requireAdmin?: boolean;
-}
-
-export function useAuth(options?: UseAuthOptions) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  const checkAuth = useCallback(async () => {
-    try {
-      const apiUrl = process.env.NEXT_PUBLIC_BICTA_API_URL || "";
-      const res = await fetch(`${apiUrl}/trpc/auth.me`, {
-        credentials: "include",
-      });
-      if (res.ok) {
-        const json = await res.json();
-        setUser(json.result?.data ?? null);
-      } else {
-        setUser(null);
-      }
-    } catch {
-      setUser(null);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+export function useAuth() {
+  const [user, setUser]       = useState<AuthUser | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    checkAuth();
-  }, [checkAuth]);
+    fetch("/api/auth/me", { credentials: "include" })
+      .then(r => r.ok ? r.json() : { user: null })
+      .then(d => setUser(d.user ?? null))
+      .catch(() => setUser(null))
+      .finally(() => setLoading(false));
+  }, []);
 
   const logout = useCallback(async () => {
-    try {
-      const apiUrl = process.env.NEXT_PUBLIC_BICTA_API_URL || "";
-      await fetch(`${apiUrl}/trpc/auth.logout`, {
-        method: "POST",
-        credentials: "include",
-      });
-    } finally {
-      setUser(null);
-      window.location.href = "/";
-    }
+    await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+    setUser(null);
+    window.location.href = "/login";
   }, []);
 
-  useEffect(() => {
-    if (isLoading) return;
-
-    if (options?.redirectOnUnauthenticated && !user) {
-      const loginUrl = `/login?redirect=${encodeURIComponent(pathname)}`;
-      router.push(loginUrl);
-    }
-
-    if (options?.requireAdmin && user && user.role !== "admin") {
-      router.push("/");
-    }
-  }, [
-    isLoading,
-    user,
-    options?.redirectOnUnauthenticated,
-    options?.requireAdmin,
-    router,
-    pathname,
-  ]);
-
-  return {
-    user,
-    isAuthenticated: !!user,
-    isAdmin: user?.role === "admin",
-    isStudent: user?.role === "student",
-    isPartner: user?.role === "partner",
-    isParticipant: user?.role === "participant",
-    isJudge: user?.role === "judge",
-    isLoading,
-    logout,
-    refresh: checkAuth,
-  };
+  return { user, loading, logout, isAdmin: user?.role === "admin" };
 }

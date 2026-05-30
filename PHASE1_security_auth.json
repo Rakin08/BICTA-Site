@@ -1,0 +1,36 @@
+{
+  "description": "PHASE 1: Security & Auth — add auth guard to admin, fix logout, deploy auth API routes",
+  "commit_message": "feat: auth guard on admin+exam, deploy login/logout/me routes, fix logout endpoint",
+  "changes": [
+    {
+      "operation": "overwrite",
+      "file": "frontend/app/admin/layout.tsx",
+      "content": "import { cookies } from \"next/headers\";\nimport { redirect } from \"next/navigation\";\nimport { ReactNode } from \"react\";\n\nexport default async function AdminLayout({ children }: { children: ReactNode }) {\n  const cookieStore = cookies();\n  const token = cookieStore.get(\"bicta_token\")?.value;\n\n  if (!token) {\n    redirect(\"/login?next=/admin\");\n  }\n\n  let isAdmin = false;\n  try {\n    const res = await fetch(\n      `${process.env.BICTA_API_URL || \"https://bicta-site-production.up.railway.app\"}/trpc/auth.me`,\n      { headers: { Cookie: `bicta_token=${token}` }, cache: \"no-store\" }\n    );\n    if (res.ok) {\n      const data = await res.json();\n      const role = data?.result?.data?.role;\n      isAdmin = role === \"admin\";\n    }\n  } catch {\n    // backend unreachable — check token payload as fallback\n    try {\n      const payload = JSON.parse(atob(token.split(\".\")[1]));\n      isAdmin = payload?.role === \"admin\";\n    } catch {\n      isAdmin = false;\n    }\n  }\n\n  if (!isAdmin) {\n    redirect(\"/login?next=/admin\");\n  }\n\n  return <>{children}</>;\n}\n"
+    },
+    {
+      "operation": "overwrite",
+      "file": "frontend/app/api/auth/login/route.ts",
+      "content": "import { NextRequest, NextResponse } from \"next/server\";\n\nexport async function POST(req: NextRequest) {\n  try {\n    const body = await req.json();\n    const { email, password } = body;\n\n    if (!email || !password) {\n      return NextResponse.json({ error: \"Email and password required\" }, { status: 400 });\n    }\n\n    const apiUrl = process.env.BICTA_API_URL || \"https://bicta-site-production.up.railway.app\";\n    const upstream = await fetch(`${apiUrl}/trpc/auth.login`, {\n      method: \"POST\",\n      headers: { \"Content-Type\": \"application/json\" },\n      body: JSON.stringify({ json: { email, password } }),\n    });\n\n    if (!upstream.ok) {\n      const err = await upstream.json().catch(() => ({}));\n      return NextResponse.json(\n        { error: err?.error?.message || \"Invalid credentials\" },\n        { status: 401 }\n      );\n    }\n\n    const data = await upstream.json();\n    const token = data?.result?.data?.token;\n    const user  = data?.result?.data?.user;\n\n    if (!token) {\n      return NextResponse.json({ error: \"Login failed — no token returned\" }, { status: 401 });\n    }\n\n    const response = NextResponse.json({ ok: true, user });\n    response.cookies.set(\"bicta_token\", token, {\n      httpOnly: true,\n      secure: process.env.NODE_ENV === \"production\",\n      sameSite: \"lax\",\n      maxAge: 60 * 60 * 24 * 7, // 7 days\n      path: \"/\",\n    });\n    return response;\n  } catch (e) {\n    console.error(\"Login error:\", e);\n    return NextResponse.json({ error: \"Server error\" }, { status: 500 });\n  }\n}\n"
+    },
+    {
+      "operation": "overwrite",
+      "file": "frontend/app/api/auth/logout/route.ts",
+      "content": "import { NextResponse } from \"next/server\";\n\nexport async function POST() {\n  const response = NextResponse.json({ ok: true });\n  response.cookies.set(\"bicta_token\", \"\", {\n    httpOnly: true,\n    secure: process.env.NODE_ENV === \"production\",\n    sameSite: \"lax\",\n    maxAge: 0,\n    path: \"/\",\n  });\n  return response;\n}\n"
+    },
+    {
+      "operation": "overwrite",
+      "file": "frontend/app/api/auth/me/route.ts",
+      "content": "import { NextRequest, NextResponse } from \"next/server\";\n\nexport async function GET(req: NextRequest) {\n  const token = req.cookies.get(\"bicta_token\")?.value;\n  if (!token) return NextResponse.json({ user: null }, { status: 401 });\n\n  try {\n    const apiUrl = process.env.BICTA_API_URL || \"https://bicta-site-production.up.railway.app\";\n    const res = await fetch(`${apiUrl}/trpc/auth.me`, {\n      headers: { Cookie: `bicta_token=${token}` },\n      cache: \"no-store\",\n    });\n    if (!res.ok) return NextResponse.json({ user: null }, { status: 401 });\n    const data = await res.json();\n    return NextResponse.json({ user: data?.result?.data });\n  } catch {\n    // fallback: decode JWT payload\n    try {\n      const payload = JSON.parse(atob(token.split(\".\")[1]));\n      return NextResponse.json({ user: payload });\n    } catch {\n      return NextResponse.json({ user: null }, { status: 401 });\n    }\n  }\n}\n"
+    },
+    {
+      "operation": "overwrite",
+      "file": "frontend/src/hooks/useAuth.ts",
+      "content": "\"use client\";\nimport { useState, useEffect, useCallback } from \"react\";\n\nexport interface AuthUser {\n  id: number;\n  email: string;\n  name: string;\n  role: \"admin\" | \"participant\" | \"judge\" | \"partner\";\n}\n\nexport function useAuth() {\n  const [user, setUser]       = useState<AuthUser | null>(null);\n  const [loading, setLoading] = useState(true);\n\n  useEffect(() => {\n    fetch(\"/api/auth/me\", { credentials: \"include\" })\n      .then(r => r.ok ? r.json() : { user: null })\n      .then(d => setUser(d.user ?? null))\n      .catch(() => setUser(null))\n      .finally(() => setLoading(false));\n  }, []);\n\n  const logout = useCallback(async () => {\n    await fetch(\"/api/auth/logout\", { method: \"POST\", credentials: \"include\" });\n    setUser(null);\n    window.location.href = \"/login\";\n  }, []);\n\n  return { user, loading, logout, isAdmin: user?.role === \"admin\" };\n}\n"
+    },
+    {
+      "operation": "overwrite",
+      "file": "frontend/app/competition/exam/page.tsx",
+      "content": "\"use client\";\nimport { useEffect } from \"react\";\nimport { useRouter } from \"next/navigation\";\nimport { useAuth } from \"@/hooks/useAuth\";\nimport ExamInterface from \"@/components/competition/ExamInterface\";\n\nexport default function ExamPage() {\n  const { user, loading } = useAuth();\n  const router = useRouter();\n\n  useEffect(() => {\n    if (!loading && !user) {\n      router.replace(\"/login?next=/competition/exam\");\n    }\n  }, [user, loading, router]);\n\n  if (loading) {\n    return (\n      <div className=\"min-h-screen bg-bicta-void flex items-center justify-center\">\n        <div className=\"text-bicta-subtle text-sm\">Verifying identity…</div>\n      </div>\n    );\n  }\n\n  if (!user) return null;\n\n  return <ExamInterface />;\n}\n"
+    }
+  ]
+}

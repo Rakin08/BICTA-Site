@@ -1,46 +1,48 @@
-import { NextResponse } from "next/server";
-import crypto from "crypto";
+import { NextRequest, NextResponse } from "next/server";
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || "tanjimmahmudrakin2@gmail.com";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "BictAadminsmurF984#";
-const ADMIN_NAME = process.env.ADMIN_NAME || "Tanjim Mahmud Rakin";
-
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const { email, password } = await req.json();
+    const body = await req.json();
+    const { email, password } = body;
 
-    if (email?.toLowerCase().trim() === ADMIN_EMAIL.toLowerCase() && password === ADMIN_PASSWORD) {
-      const payload = Buffer.from(JSON.stringify({
-        id: 1, name: ADMIN_NAME, email: ADMIN_EMAIL, role: "admin",
-        exp: Date.now() + 7 * 24 * 60 * 60 * 1000,
-      })).toString("base64");
-
-      const res = NextResponse.json({ success: true, user: { id: 1, name: ADMIN_NAME, email: ADMIN_EMAIL, role: "admin" } });
-      const cookieOpts = { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax" as const, maxAge: 7 * 24 * 60 * 60, path: "/" };
-      res.cookies.set("bicta_admin", payload, cookieOpts);
-      res.cookies.set("bicta_session", payload, cookieOpts);
-      return res;
+    if (!email || !password) {
+      return NextResponse.json({ error: "Email and password required" }, { status: 400 });
     }
 
-    const apiUrl = process.env.BICTA_API_URL;
-    if (apiUrl) {
-      const backendRes = await fetch(`${apiUrl}/api/auth/login`, {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-      if (backendRes.ok) {
-        const data = await backendRes.json();
-        const payload = Buffer.from(JSON.stringify({ ...data.user, exp: Date.now() + 7 * 24 * 60 * 60 * 1000 })).toString("base64");
-        const res = NextResponse.json({ success: true, user: data.user });
-        const cookieOpts = { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "lax" as const, maxAge: 7 * 24 * 60 * 60, path: "/" };
-        res.cookies.set("bicta_session", payload, cookieOpts);
-        if (data.user?.role === "admin") res.cookies.set("bicta_admin", payload, cookieOpts);
-        return res;
-      }
+    const apiUrl = process.env.BICTA_API_URL || "https://bicta-site-production.up.railway.app";
+    const upstream = await fetch(`${apiUrl}/trpc/auth.login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ json: { email, password } }),
+    });
+
+    if (!upstream.ok) {
+      const err = await upstream.json().catch(() => ({}));
+      return NextResponse.json(
+        { error: err?.error?.message || "Invalid credentials" },
+        { status: 401 }
+      );
     }
 
-    return NextResponse.json({ message: "Invalid email or password" }, { status: 401 });
-  } catch {
-    return NextResponse.json({ message: "Login failed" }, { status: 500 });
+    const data = await upstream.json();
+    const token = data?.result?.data?.token;
+    const user  = data?.result?.data?.user;
+
+    if (!token) {
+      return NextResponse.json({ error: "Login failed — no token returned" }, { status: 401 });
+    }
+
+    const response = NextResponse.json({ ok: true, user });
+    response.cookies.set("bicta_token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      path: "/",
+    });
+    return response;
+  } catch (e) {
+    console.error("Login error:", e);
+    return NextResponse.json({ error: "Server error" }, { status: 500 });
   }
 }
