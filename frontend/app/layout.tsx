@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter, Playfair_Display, JetBrains_Mono } from "next/font/google";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import SiteNav from "@/components/layout/SiteNav";
 import SiteFooter from "@/components/layout/SiteFooter";
 import Providers from "@/components/Providers";
@@ -70,6 +71,7 @@ export default function RootLayout({
           <FooterWithData />
           <ChatBotWrapper />
         </Providers>
+        <SpeedInsights />
       </body>
     </html>
   );
