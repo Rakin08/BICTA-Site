@@ -1,52 +1,55 @@
-import { NextResponse } from "next/server";
-import { z } from "zod";
+import { NextRequest, NextResponse } from "next/server";
+import nodemailer from "nodemailer";
 
-const contactSchema = z.object({
-  name: z.string().min(1, "Name is required"),
-  email: z.string().email("Valid email is required"),
-  subject: z.string().optional(),
-  message: z.string().min(10, "Message must be at least 10 characters"),
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || "smtp.gmail.com",
+  port: Number(process.env.SMTP_PORT) || 587,
+  secure: false,
+  auth: {
+    user: process.env.SMTP_USER || "tanjimmahmudrakin2@gmail.com",
+    pass: process.env.SMTP_PASS,
+  },
 });
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const result = contactSchema.safeParse(body);
+    const { name, email, subject, message } = await req.json();
 
-    if (!result.success) {
-      return NextResponse.json(
-        { error: "Validation failed", issues: result.error.issues },
-        { status: 400 }
-      );
+    if (!name || !email || !message) {
+      return NextResponse.json({ error: "Name, email, and message are required" }, { status: 400 });
     }
 
+    // Try to save to backend DB
     const apiUrl = process.env.BICTA_API_URL;
-    if (!apiUrl) {
-      return NextResponse.json(
-        { error: "BICTA_API_URL not configured" },
-        { status: 500 }
-      );
+    if (apiUrl) {
+      try {
+        await fetch(`${apiUrl}/trpc/contact.submit`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ json: { name, email, subject, message } }),
+        });
+      } catch { /* backend offline — email fallback below */ }
     }
 
-    const trpcRes = await fetch(`${apiUrl}/trpc/contact.submit`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ json: result.data }),
+    // Always send email notification
+    await transporter.sendMail({
+      from: `BICTA Contact <${process.env.SMTP_USER || "tanjimmahmudrakin2@gmail.com"}>`,
+      to: process.env.SMTP_USER || "tanjimmahmudrakin2@gmail.com",
+      subject: `[BICTA Contact] ${subject || "New message"} — from ${name}`,
+      html: `
+        <h2>New Contact Form Submission</h2>
+        <p><strong>Name:</strong> ${name}</p>
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Subject:</strong> ${subject || "N/A"}</p>
+        <hr/>
+        <p>${message.replace(/\n/g, "<br/>")}</p>
+      `,
+      replyTo: email,
     });
 
-    if (!trpcRes.ok) {
-      const errText = await trpcRes.text();
-      return NextResponse.json(
-        { error: "Backend submission failed", detail: errText },
-        { status: 502 }
-      );
-    }
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    return NextResponse.json(
-      { error: "Internal server error", detail: String(error) },
-      { status: 500 }
-    );
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    console.error("Contact form error:", e);
+    return NextResponse.json({ error: "Failed to send message" }, { status: 500 });
   }
 }

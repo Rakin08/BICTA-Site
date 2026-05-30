@@ -1,69 +1,54 @@
-import { NextResponse } from "next/server";
-import { z } from "zod";
+import { NextRequest, NextResponse } from "next/server";
+import nodemailer from "nodemailer";
 
-const inquirySchema = z.object({
-  organizationName: z.string().min(1, "Organization name is required"),
-  contactName: z.string().min(1, "Contact name is required"),
-  email: z.string().email("Valid email is required"),
-  phone: z.string().optional(),
-  interestType: z.enum([
-    "sponsor",
-    "university_partner",
-    "media_partner",
-    "ecosystem_partner",
-    "other",
-  ]),
-  notes: z.string().optional(),
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST || "smtp.gmail.com",
+  port: Number(process.env.SMTP_PORT) || 587,
+  secure: false,
+  auth: {
+    user: process.env.SMTP_USER || "tanjimmahmudrakin2@gmail.com",
+    pass: process.env.SMTP_PASS,
+  },
 });
 
-export type PartnerInquiryInput = z.infer<typeof inquirySchema>;
-
-/**
- * POST /api/partner-inquiry
- * Proxies partner inquiry submissions to the tRPC backend.
- * Validates input with Zod before forwarding.
- */
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    const { name, email, company, partnershipType, message } = await req.json();
 
-    // Validate input
-    const result = inquirySchema.safeParse(body);
-    if (!result.success) {
-      return NextResponse.json(
-        { error: "Validation failed", issues: result.error.issues },
-        { status: 400 }
-      );
+    if (!name || !email || !company) {
+      return NextResponse.json({ error: "Name, email, and company are required" }, { status: 400 });
     }
 
-    // Forward to tRPC backend
     const apiUrl = process.env.BICTA_API_URL;
-    if (!apiUrl) {
-      return NextResponse.json(
-        { error: "BICTA_API_URL not configured" },
-        { status: 500 }
-      );
+    if (apiUrl) {
+      try {
+        await fetch(`${apiUrl}/trpc/partner.submitInquiry`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ json: { name, email, company, partnershipType, message } }),
+        });
+      } catch { /* fallback to email */ }
     }
 
-    const trpcRes = await fetch(`${apiUrl}/trpc/partner.submit`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ json: result.data }),
+    await transporter.sendMail({
+      from: `BICTA <${process.env.SMTP_USER || "tanjimmahmudrakin2@gmail.com"}>`,
+      to: process.env.SMTP_USER || "tanjimmahmudrakin2@gmail.com",
+      subject: `[BICTA Partner] New inquiry from ${company}`,
+      html: `
+        <h2>New Partnership Inquiry</h2>
+        <p><strong>Name:</strong> ${name}</p>
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Company:</strong> ${company}</p>
+        <p><strong>Partnership type:</strong> ${partnershipType || "N/A"}</p>
+        <hr/>
+        <p>${(message || "").replace(/\n/g, "<br/>")}</p>
+      `,
+      replyTo: email,
     });
 
-    if (!trpcRes.ok) {
-      const errText = await trpcRes.text();
-      return NextResponse.json(
-        { error: "Backend submission failed", detail: errText },
-        { status: 502 }
-      );
-    }
-
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    return NextResponse.json(
-      { error: "Internal server error", detail: String(error) },
-      { status: 500 }
-    );
+    return NextResponse.json({ ok: true });
+  } catch (e) {
+    console.error("Partner inquiry error:", e);
+    return NextResponse.json({ error: "Failed to send inquiry" }, { status: 500 });
   }
 }
