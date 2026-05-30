@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
-import { sendTelegram } from "@/lib/telegram";
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "smtp.gmail.com",
@@ -47,7 +46,6 @@ export async function POST(req: NextRequest) {
       replyTo: email,
     });
 
-    await sendTelegram(`🤝 <b>New partner inquiry</b>\n<b>Company:</b> ${company}\n<b>Contact:</b> ${name} (${email})\n<b>Type:</b> ${partnershipType || "N/A"}`);
     return NextResponse.json({ ok: true });
   } catch (e) {
     console.error("Partner inquiry error:", e);
