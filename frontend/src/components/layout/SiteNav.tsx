@@ -13,6 +13,7 @@ const navLinks = [
   { label: "Programs", href: "/programs" },
   { label: "Partners", href: "/partners" },
   { label: "About", href: "/about" },
+  { label: "Alumni", href: "/alumni" },
 ];
 
 export default function SiteNav() {
