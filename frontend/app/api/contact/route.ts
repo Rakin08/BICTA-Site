@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
+import { sendTelegram } from "@/lib/telegram";
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || "smtp.gmail.com",
@@ -47,6 +48,7 @@ export async function POST(req: NextRequest) {
       replyTo: email,
     });
 
+    await sendTelegram(`📬 <b>New contact form</b>\n<b>From:</b> ${name} (${email})\n<b>Subject:</b> ${subject || "N/A"}\n<b>Message:</b> ${message.slice(0, 200)}${message.length > 200 ? "…" : ""}`);
     return NextResponse.json({ ok: true });
   } catch (e) {
     console.error("Contact form error:", e);
